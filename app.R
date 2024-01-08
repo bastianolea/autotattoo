@@ -1,3 +1,4 @@
+# AutoNato, generador aleatorio de ideas para dibujar tatuajes
 # disponible en https://bastianoleah.shinyapps.io/autonatotattoo/
 
 library(shiny)
@@ -55,6 +56,7 @@ ui <- fluidPage(
            background-color: ", color_secundario, "; 
            letter-spacing: 1px;
            border-radius: 8px; border-width: 3px; 
+           min-width: 100px;
            border-color: ", color_detalle, "; 
            color: ", color_texto, ";
     }
@@ -144,7 +146,7 @@ ui <- fluidPage(
     column(12, style = glue("color: {color_destacado};"),
            # h1("Auto Nato"),
            h1(textOutput("titulo")), #título cambiante
-           p("generador de ideas aleatorias para dibujar tatuajes")
+           p("generador aleatorio de ideas para dibujar tatuajes e ilustraciones")
     )
   ),
   
@@ -173,15 +175,15 @@ ui <- fluidPage(
              #botón principal
              actionButton("generar", 
                           label = "generar!",
-                          style = "width: 200px"
+                          style = "width: 200px;"
                           #style = glue("background-color: {color_secundario}; 
                           #             border-radius: 8px; border-color: {color_detalle}; border-width: 3px; color: {color_texto}")
              )
            ),
            
            #botonera de opciones
-           div(style = "margin-top: 38px; min-width: 200px;",
-               shinyWidgets::radioGroupButtons("tipo", label = NULL, choices = c("tatuaje", "ilustración"), size = "xs"),
+           div(style = "margin-top: 38px; width: 200px;",
+               shinyWidgets::radioGroupButtons("tipo", label = NULL, choices = c("tatuaje", "ilustración"), justified = TRUE, size = "xs"),
            ),
            div(style = "max-width: 200px; margin-top: 20px;",
                #codigo para la barra de progreso controlada por dos botones
@@ -190,8 +192,25 @@ ui <- fluidPage(
              #       shinyWidgets::progressBar(id = "barra", value = 20)
              #       ),
              #   actionButton("sumar", "+", style = "margin: 4px; width: 44px; padding: 4px; padding-left: 5px; display: inline-block;")
-             sliderInput("spicy", "spicyness", min = 1, max = 10, value = 4, step = 2, ticks = FALSE)
+             sliderInput("spicy", "spicyness", min = 1, max = 5, value = 2, step = 1, ticks = FALSE)
+           ),
+           div(style = "margin-top: 38px; width: 200px;",
+               # shinyWidgets::radioGroupButtons("magia", label = NULL, choices = "ver probabilidades", justified = TRUE, size = "xs")
+               actionButton("magia", label = "ver probabilidades", style = "width: 200px; font-size: 70% !important; font-weight: normal; height: 30px; padding-top: 1px;")
            )
+    )
+  ),
+  
+  ## gráfico de posibilidades ----
+  fluidRow(
+    conditionalPanel(
+      condition = "input.magia % 2 == 1",
+    column(12, align = "center", 
+           style = "margin-top: 24px; margin-bottom: 24px; margin-left:auto;margin-right:auto;",
+           div(style = "max-width: 480px;",
+               plotOutput("grafico")
+           )
+    )
     )
   ),
   
@@ -200,18 +219,8 @@ ui <- fluidPage(
     column(12, style = glue("color: {color_destacado}; margin-top: 24px;"),
            HTML("by <a href='http://instagram.com/natogatotattoo'>@natogatotattoo</a>")
     ),
-    column(12, style = glue("color: {color_destacado}; margin-top: 6px; font-size: 75%;"),
-           HTML("programado en R, <a href='http://instagram.com/natogatotattoo'>código abierto en GitHub</a>")
-    )
-  ),
-  
-  ## gráfico de posibilidades ----
-  fluidRow(
-    column(12, align = "center", 
-           style = "margin-top: 24px; margin-bottom: 24px; margin-left:auto;margin-right:auto;",
-           div(style = "max-width: 480px;",
-             plotOutput("grafico")
-           )
+    column(12, style = glue("color: {color_destacado}; margin-top: 6px; font-size: 75%; margin-bottom: 24px;"),
+           HTML("programado en R, <a href='https://github.com/bastianolea/autotattoo'>código abierto en GitHub</a>")
     )
   )
   )
@@ -245,20 +254,22 @@ server <- function(input, output, session) {
   probabilidad_alta <- function() sample(1:10, 1) > 3 #70%
   
   #multiplicadores para aumentar chances de algunos elementos
-  prob_baja = 3
-  prob_media = 6
-  prob_alta = 9
+  prob_baja = 2
+  prob_media = 4
+  prob_alta = 8
   
   #retorna true si se eligió la opción tatuaje (default)
   es_tatuaje <- reactive(input$tipo == "tatuaje")
   
+  
+  ### spicyness ----
+  # actúa como multiplicador de términos más extremos, donde el valor de 2 es por defecto. algunos términos lo usan dividido por 2
   # spicy <- reactive(input$spicy)
   
-  if (shiny::isRunning()) {
+  if (shiny::isRunning()) { #para probar la app fuera del entorno interactivo de shiny
   spicy <- reactive({
-    valor <- as.integer(input$spicy/2)
+    valor <- as.integer(input$spicy)
     if (valor < 1) valor = 1
-    
     return(valor)
     })
   } else {
@@ -302,32 +313,37 @@ server <- function(input, output, session) {
     
     ### ideas ----
     #son los elementos principales del tatuaje, el sujeto del dibujo
-    ideas_animales = c("perrito", "conejo", "gato", "capibara", "ratita", "sapo", "rana", "hámster", "pajarito", 
-                       "animalito", "animal doméstico", "animal exótico", "animal salvaje")
-    ideas_terror = c("demonio",  "calabaza", "rata", "calavera" |> rep(prob_baja), "cráneo", "bruja", "zombie",
-                     "esqueleto", "monstruo", "araña", "insecto", "personaje de halloween", "cosa de halloween")
+    ideas_animales = c("perrito", "conejo", "gato", "gatito" |> rep(prob_baja), "capibara", "ratita" |> rep(prob_baja), 
+                       "sapo", "rana" |> rep(prob_baja), "hámster", "pato", "coipo", "mapache", "pajarito", 
+                       "animalito", "animalito doméstico", "animal exótico", "animal salvaje")
+    ideas_terror = c("demonio",  "calabaza", "rata", "calavera", "cráneo" |> rep(prob_baja), "bruja", "zombie",
+                     "esqueleto", "monstruo", "araña", "insecto", "serpiente", "personaje de halloween", "cosa de halloween")
     
     ideas_aves = c("queltehue", "loica", "tiuque", "gorrión", "chincol")
     ideas_objetos = c("jaula", "llave", "tijera", c("navaja", "cuchilla", "manopla") |> rep(spicy()))
     
     #pool de ideas
-    ideas = c("mujer" |> rep(prob_media + spicy()), 
-              "personaje de anime" |> rep(prob_baja),
+    ideas = c("mujer" |> rep(prob_baja + spicy()), 
+              "personaje de anime" |> rep(prob_baja + spicy()), #se selecciona de su conjunto especial
               "personaje de videojuegos",
+              "jojos" |> rep(prob_baja + spicy()),
               ideas_animales,
               ideas_terror |> rep(spicy()),
               ideas_aves,
               ideas_objetos,
-              "escarabajo", "flor", "honguito", "personaje de tu serie favorita")
+              "escarabajo" |> rep(prob_baja), "polilla", "mariposa", "dragón",
+              "flor", "honguito", "personaje de tu serie favorita")
     
     idea <- elegir(ideas) #elegir idea
     idea_base <- idea
+    message()
     message("idea elegida: ", idea, ", nivel de spicy: ", spicy())
+    
     
     ### género ----
     # de todas las ideas, especificar acá cuales son de género femenino, para modificar el resto de opciones
     ideas_femeninas <- c("calabaza", "bruja", "flor", "mujer", "ratita", "rana", "araña", "calavera", "cosa de halloween",
-                         "loica", "jaula", "llave", "tijera", "navaja", "cuchilla", "manopla")
+                         "loica", "jaula", "llave", "tijera", "navaja", "cuchilla", "manopla", "polilla", "mariposa", "serpiente")
     es_femenino <- idea %in% ideas_femeninas
     articulo <- ifelse(es_femenino, "una", "un") # género del artículo de la idea
     
@@ -360,9 +376,9 @@ server <- function(input, output, session) {
     intro_extras <- c("con" |> rep(prob_media), ifelse(es_femenino, "rodeada de", "rodeado de"), 
                       "con detalles de", ifelse(es_femenino, "detallada con", "detallado con"),
                       ifelse(es_femenino, "adornada con", "adornado con"))
-    extras <- c("estrellitas", "calaveritas", "bichitos",  "brillitos", "nubecitas", "lucecitas", "flores", 
+    extras <- c("estrellitas", "calaveritas", "bichitos", "brillitos", "nubecitas", "lucecitas", "vegetación",
                  "mariposas", "humito", "constelaciones", "pastito", "florcitas", "fuego", 
-                c("cadenas", "insectos", "cráneos", "huesos","telarañas") |> rep(spicy())
+                c("cadenas", "insectos", "cráneos", "huesos", "telarañas") |> rep(spicy())
                 )
     
     intro_tamaños <- c("para un" |> rep(prob_media), "pensando en un", "idealmente para un")
@@ -373,14 +389,14 @@ server <- function(input, output, session) {
     ### conjuntos spicy ----
     if (spicy() > 2) {
       intros <- c(intros, "por el amor de dios, dibuja", "ya ql, dibuja", "mira perrita por qué no dibujai", 
-                  "ya mierda, dibujemos", "ya ctm dibuja", "dibuja" |> rep(prob_media)) |> 
+                  "ya mierda, dibujemos", "ya culiao,", "ya ctm dibuja", "dibuja" |> rep(prob_media)) |> 
         rep(spicy()/2)
       paletas <- c(paletas, "vísceras de animal muerto", "interiores de un animal putrefacto", "putrefactos", "vomitivos", 
                    "asquerosos", "extravagantes", "exóticos", "chillones", "bien maracos", "bien putitos", "coquetones") |> 
         rep(spicy()/2)
       estilos <- c(estilos, "erótico", "coqueto", "horny", "violento", "horror", "gore") |> 
         rep(spicy()/2)
-      extras <- c(extras, "violencia", "muerte", "sustancias viscosas no especificadas", "destrucción", "cadáveres", "fetos (opcional)") |> 
+      extras <- c(extras, "violencia", "muerte", "lencería", "sustancias viscosas no especificadas", "destrucción", "cadáveres", "fetos (opcional)") |> 
         rep(spicy()/2)
     }
     
@@ -403,7 +419,7 @@ server <- function(input, output, session) {
                     "chiquita",  "pensativa", "curiosa", "rellenita", "haciendo muecas", "fumando",
                     "arlequín", "sonriente", "enternecida", "adorable", "pensativa", "vieja", "joven",
                     # spicy
-                    c("diabólica", "deprimida", "mutante",  "del futuro", "malvada", "enfurecida", 
+                    c("diabólica", "deprimida", "mutante", "del futuro", "malvada", "enfurecida", 
                       "demoniaca", "enojada", "sexy", "guapa", "aterrada") |> rep(spicy())
                     )
     
@@ -422,17 +438,18 @@ server <- function(input, output, session) {
     mujer_tipos <- c(mujer_tipos, "ensangrentada", "sufriendo", "amarrada", "desfigurada", "completamente desnuda", "desnuda") |> rep(spicy()/2)
     }
     
+    # conjunto de términos que se usa si sale la idea "personaje de anime"
+    animes <- c("Evangelion", "Mikami", "Sanrio" |> rep(prob_baja), "Sailor Moon" |> rep(prob_baja), 
+                "Studio Ghibli" |> rep(prob_media), "Jojo's" |> rep(prob_media + spicy()), 
+                "Cowboy Bebop", "Sakura Card Captor" |> rep(prob_baja), "Avatar", 
+                "tu anime favorito", "algún anime antiguo/retro", "algún anime nuevo")
     
-    
-    animes <- c("Evangelion", "Mikami", "Sanrio", "Sailor Moon", "Studio Ghibli" |> rep(prob_baja), "Jojo's" |> rep(prob_media), 
-                "Cowboy Bebop", "Sakura Card Captor", "Avatar", "tu anime favorito", 
-                "algún anime antiguo", "algún anime nuevo")
-    
+    # conjunto de términos que se usa si sale "Jojo's" en "personaje de anime"
     jojos <- c("Phantom Blood", "Battle Tendency", "Stardust Crusaders", "Diamond Is Unbreakable", "Golden Wind", "Stone Ocean")
     
     videojuegos <- c("Kirby", "Link (Zelda)", "Zelda", "Samus (Metroid)", "Pikmin", "Bayonetta", 
                      "personaje del juego Street Fighter", "personaje del juego Darkstalkers", 
-                     "personaje de Super Mario", "personaje de Pokemon") 
+                     "personaje de Super Mario", "personaje de Pokemon", "personaje de Dark Souls/Elden Ring/Bloodborne") 
     
     mujer_tipo_base <- mujer_tipo <- elegir(mujer_tipos)
     mujer_objeto_base <- mujer_objeto <- elegir(mujer_objetos)
@@ -441,23 +458,34 @@ server <- function(input, output, session) {
     personaje_juego <- elegir(videojuegos)
     
     
-    
-    
     ### adjetivos ----
     #solo las ideas de los conjuntos especificados llevan adjetivos (palabras inmediatamente después de la palabra, por ejemplo, conejo tierno)
-    animales_adjetivos <- c(ifelse(es_femenino, "hermosa", "hermoso"), ifelse(es_femenino, "tierna", "tierno"), "alegre", "descansando", "bebé" |> rep(3), 
-                            ifelse(es_femenino, "chiquita", "chiquito"), ifelse(es_femenino, "pensativa", "pensativo"),
-                            "durmiendo", ifelse(es_femenino, "pequeña", "pequeño"), "grande", "adorable", ifelse(es_femenino, "curiosa", "curioso"),
-                            #spicy
-                            c("horrible", ifelse(es_femenino, "abandonado", "abandonado"), ifelse(es_femenino, "enojada", "enojado"), ifelse(es_femenino, "rabiosa", "rabioso"), 
-                              ifelse(es_femenino, "roñosa", "roñoso"), ifelse(es_femenino, "malvada", "malvado"), ifelse(es_femenino, "enfermita", "enfermo"), 
-                              ifelse(es_femenino, "enfurecida", "enfurecido"), "zombie", "mutante", "esqueleto", ifelse(es_femenino, "ensangrentada", "ensangrentado"), 
-                              ifelse(es_femenino, "herida", "herido")) |> rep(spicy())
+    animales_adjetivos <- c(ifelse(es_femenino, "hermosa", "hermoso"), ifelse(es_femenino, "tierna", "tierno") |> rep(prob_baja), "alegre", "descansando", 
+                            "bebé" |> rep(prob_media), 
+                            ifelse(es_femenino, "chiquita", "chiquito") |> rep(prob_media), ifelse(es_femenino, "pensativa", "pensativo"),
+                            "durmiendo", ifelse(es_femenino, "pequeña", "pequeño") |> rep(prob_baja), "grande", "adorable" |> rep(prob_baja), ifelse(es_femenino, "curiosa", "curioso")
                             )
+    if (spicy() > 2) {
+      # spicy
+      animales_adjetivos <- c(animales_adjetivos,
+                              c("horrible", ifelse(es_femenino, "abandonado", "abandonado"), ifelse(es_femenino, "enojada", "enojado"), ifelse(es_femenino, "rabiosa", "rabioso"), 
+        ifelse(es_femenino, "roñosa", "roñoso"), ifelse(es_femenino, "malvada", "malvado"), ifelse(es_femenino, "enfermita", "enfermo"), 
+        ifelse(es_femenino, "enfurecida", "enfurecido"), "zombie" |> rep(prob_baja), "mutante" |> rep(prob_baja), "esqueleto" |> rep(prob_baja), 
+        ifelse(es_femenino, "ensangrentada", "ensangrentado") |> rep(prob_baja), 
+        ifelse(es_femenino, "herida", "herido") |> rep(spicy()), ifelse(es_femenino, "oscura", "oscuro") |> rep(spicy())
+      ) |> rep(spicy()/2)
+      )
+    }
     
-    terror_adjetivos <- c("mutante", ifelse(es_femenino, "mágica", "mágico"), "fantasmal", ifelse(es_femenino, "malévola", "malévolo"), "espectral",
-                          "alimentándose de un cadáver", "luchando", "amenazante", "envuelto en oscuridad", "en metamorfosis", ifelse(es_femenino, "embrujada", "embrujado"),
-                          ifelse(es_femenino, "ensangrentada", "ensangrentado"), ifelse(es_femenino, "herida", "herido"), ifelse(es_femenino, "corrompida", "corrompido"))
+    
+    terror_adjetivos <- c("mutante" |> rep(spicy()), ifelse(es_femenino, "mágica", "mágico"), ifelse(es_femenino, "asesina", "asesino"), "fantasmal", 
+                          ifelse(es_femenino, "malévola", "malévolo"), "espectral", 
+                          "alimentándose de un cadáver", "luchando", "amenazante", "envuelto en oscuridad", "en metamorfosis", 
+                          ifelse(es_femenino, "embrujada", "embrujado"), "decadente",
+                          ifelse(es_femenino, "ensangrentada", "ensangrentado") |> rep(spicy()), ifelse(es_femenino, "poseída", "poseído") |> rep(spicy()), 
+                          ifelse(es_femenino, "moribunda", "moribundo") |> rep(spicy()), ifelse(es_femenino, "sedienta de sangre", "sediento de sangre") |> rep(spicy()),
+                          ifelse(es_femenino, "mutilada", "mutilado") |> rep(spicy()), "en descomposición" |> rep(spicy()),
+                          ifelse(es_femenino, "herida", "herido"), ifelse(es_femenino, "corrompida", "corrompido"), ifelse(es_femenino, "hechizada", "hechizado"))
     
     animales_adjetivo <- elegir(animales_adjetivos)
     terror_adjetivo <- elegir(terror_adjetivos)
@@ -556,11 +584,12 @@ server <- function(input, output, session) {
 
     #redacción anime
     if (elegido()$idea == "personaje de anime") {
-      if (elegido()$anime == "jojos") {
-        mensaje <- glue::glue("un <b>personaje de Jojo's</b> de la temporada {elegido()$jojo}")
-      } else {
         mensaje <- glue::glue("un <b>personaje de anime de {elegido()$anime}</b>, con {elegido()$extra}")
-      }
+    }
+    
+    if (elegido()$idea == "jojos") {
+      message("jojo reference!")
+      mensaje <- glue::glue("un <b>personaje de Jojo's</b> de la temporada {elegido()$jojo}")
     }
 
     #redacción videojuegos
@@ -620,6 +649,7 @@ server <- function(input, output, session) {
   graficar <- reactive({
     req(input$generar > 0)
     req(elegido())
+    req(input$magia %% 2 == 1)
     message("generando gráfico...")
     
     # browser()
@@ -631,7 +661,7 @@ server <- function(input, output, session) {
     mujer_tipos <- compilar_posibilidades("mujer_tipos", "mujer_tipo_base", 5)
     mujer_objetos <- compilar_posibilidades("mujer_objetos", "mujer_objeto_base", 6)
     animales_adjetivos <- compilar_posibilidades("animales_adjetivos", "animales_adjetivo", 7)
-    terror_adjetivos <- compilar_posibilidades("terror_adjetivos", "terror_adjetivo", 8)
+    terror_adjetivos <- compilar_posibilidades("terror_adjetivos", "terror_adjetivo", 7)
     # terror_adjetivos
     
     # elegido()$animales_adjetivos
