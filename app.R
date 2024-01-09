@@ -6,6 +6,7 @@ library(fresh)
 library(dplyr)
 library(ggplot2)
 library(glue)
+library(shinycssloaders)
 
 # color_fondo = "#000000"
 # color_secundario = "#333333"
@@ -22,37 +23,46 @@ color_texto = "#8e5fb2"
 color_destacado = "#89d1dc"
 
 # ui ----
-ui <- fluidPage(
-  
-  use_googlefont("Pixelify Sans"), #cargar fuente o tipo de letra
-  
-  use_theme(create_theme(
-    theme = "default",
-    bs_vars_font(size_base = "22px", #aumentar globalmente tamaño de letra
-                 family_sans_serif = "Pixelify Sans" #cargar fuente o tipo de letra
-    )
-  )),
-  
-  ## css ----
-  
-  #cambiar color de fondo
-  tags$style(
-    paste0(".container-fluid, body {
+ui <- fluidPage(title = "AutoNatoTattoo", 
+                lang = "es",
+                
+                use_googlefont("Pixelify Sans"), #cargar fuente o tipo de letra
+                
+                use_theme(create_theme(
+                  theme = "default",
+                  bs_vars_font(size_base = "22px", #aumentar globalmente tamaño de letra
+                               family_sans_serif = "Pixelify Sans" #cargar fuente o tipo de letra
+                  )
+                )),
+                
+                ## css ----
+                
+                tags$style(".recalculating { opacity: inherit !important; }"),
+                
+                tags$style("h1 {
+                           font-size: 200%;
+                           font-weight: bold;
+                           }"
+                ),
+                
+                #cambiar color de fondo
+                tags$style(
+                  paste0(".container-fluid, body {
            background-color: ", color_fondo, ";
               }")
-  ),
-  
-  #cambiar color de los enlaces
-  tags$style(
-    paste0("a, a:hover {
+                ),
+           
+           #cambiar color de los enlaces
+           tags$style(
+             paste0("a, a:hover {
            color: ", color_destacado, ";
            text-decoration: underline;}"
-    )
-  ),
-  
-  #estilo de botones
-  tags$style(
-    paste0(".action-button {
+             )
+           ),
+           
+           #estilo de botones
+           tags$style(
+             paste0(".action-button, .action-button:focus {
            background-color: ", color_secundario, "; 
            letter-spacing: 1px;
            border-radius: 8px; border-width: 3px; 
@@ -66,13 +76,13 @@ ui <- fluidPage(
     border-color: ", color_secundario, "; 
     color: ", color_texto, ";
     }")
-  ),
-  
-  #estilo de botonera de botones radiales
-  tags$style(
-    paste0(".btn.radiobtn.btn-default {
+           ),
+    
+    #estilo de botonera de botones radiales
+    tags$style(
+      paste0(".btn.radiobtn.btn-default {
            color: ", color_texto, ";
-           font-size: 70% !important;
+           font-size: 68% !important;
            font-weight: normal;
            min-width: 100px;
            background-color: ", color_detalle, ";
@@ -83,11 +93,11 @@ ui <- fluidPage(
            background-color: ", color_secundario, ";
            box-shadow: none;
            }"
-    )
-  ),
-  
-  #estilo de barra slider
-  tags$style("
+      )
+    ),
+    
+    #estilo de barra slider
+    tags$style("
   /*fondo de barra, o sección inactiva*/
   .irs--shiny .irs-line {
   background: none;
@@ -146,7 +156,8 @@ ui <- fluidPage(
         column(12, style = glue("color: {color_destacado};"),
                # h1("Auto Nato"),
                h1(textOutput("titulo")), #título cambiante
-               p("generador aleatorio de ideas para dibujar tatuajes e ilustraciones")
+               p("generador aleatorio de ideas para dibujar tatuajes e ilustraciones",
+                 style = "line-height: 1.1em;")
         )
       ),
       
@@ -161,7 +172,7 @@ ui <- fluidPage(
                             padding: 16px; background-color: {color_secundario}; 
                             border-radius: 8px; border: 3px solid; border-color: {color_detalle}; 
                             color: {color_texto};"),
-                   htmlOutput("texto_generado")
+                   htmlOutput("texto_generado") |> withSpinner(proxy.height = 180, color = color_texto)
                )
         )
       ),
@@ -170,24 +181,25 @@ ui <- fluidPage(
       fluidRow(
         column(12, 
                align="center", 
-               style = "margin-bottom: 24px; margin-top: 24px;",
+               style = "margin-bottom: 24px; margin-top: 12px;",
                div(
                  #botón principal
                  actionButton("generar", 
                               label = "generar!",
-                              style = "width: 200px;"
-                              #style = glue("background-color: {color_secundario}; 
-                              #             border-radius: 8px; border-color: {color_detalle}; border-width: 3px; color: {color_texto}")
+                              style = "width: 220px;"
+                              # style = glue("width: 220px; background-color: {color_destacado};
+                              # #             border-radius: 8px; border-color: {color_detalle}; border-width: 3px; color: {color_texto}")
                  )
                ),
                
                # botonera de opciones de ilustración
-               div(style = "margin-top: 38px; width: 200px;",
-                   shinyWidgets::radioGroupButtons("tipo", label = NULL, choices = c("tatuaje", "ilustración"), justified = TRUE, size = "xs"),
+               div(style = "margin-top: 38px; width: 220px;",
+                   shinyWidgets::radioGroupButtons("tipo", label = NULL, 
+                                                   choices = c("tatuaje", "ilustración"), justified = TRUE, size = "xs"),
                ),
                
                #slider spicy
-               div(style = "max-width: 200px; margin-top: 20px;",
+               div(style = "max-width: 220px; margin-top: 20px;",
                    #codigo para la barra de progreso controlada por dos botones
                    # actionButton("restar", "-", style = "margin: 4px; width: 44px; padding: 4px; display: inline-block;"),
                    #   div(style = "display: inline-block; height: 30px; width: 100px; margin: 10px;", 
@@ -198,16 +210,16 @@ ui <- fluidPage(
                ),
                
                #slider complejidad
-               div(style = "max-width: 200px; margin-top: 20px;",
+               div(style = "max-width: 220px; margin-top: 20px;",
                    sliderInput("complejidad", "complejidad", min = 1, max = 3, value = 3, step = 1, ticks = FALSE)
                ),
                
                #botón ver más (gráfico y explicación), solo aparece si se generó texto
                conditionalPanel(
                  condition = "input.generar > 0",
-                 div(style = "margin-top: 38px; width: 200px;",
+                 div(style = "margin-top: 38px; width: 220px;",
                      # shinyWidgets::radioGroupButtons("magia", label = NULL, choices = "ver probabilidades", justified = TRUE, size = "xs")
-                     actionButton("magia", label = "ver más info", style = "width: 200px; font-size: 70% !important; font-weight: normal; height: 30px; padding-top: 1px;")
+                     actionButton("magia", label = "ver más info", style = "width: 220px; font-size: 70% !important; font-weight: normal; height: 30px; padding-top: 1px;")
                  )
                )
         )
@@ -220,10 +232,23 @@ ui <- fluidPage(
           column(12, align = "center", 
                  style = "margin-top: 24px; margin-bottom: 24px; margin-left:auto;margin-right:auto;",
                  div(style = "max-width: 480px;",
-                     plotOutput("grafico", height = 420),
+                     
+                     #gráfico de posibilidades
+                     plotOutput("grafico_posibilidades", height = 420) |> withSpinner(proxy.height = 420, color = color_texto),
+                     
+                     div(style = "padding-top: 16px; padding-bottom: 16px;",
                      p("Cada columna es un conjunto de términos, y la oscuridad del color indica su probabilidad variable de salir elegido. 
-                 Las columnas desvanecidas están desactivadas en base a las condiciones de las otras columnas. Los rectángulos destacados son los términos que fueron seleccionados.", 
-                 style = glue("text-align: left; color: {color_texto}; margin-top: 6px; font-size: 75%; margin-bottom: 24px;"))
+                 Las columnas desvanecidas están desactivadas en base a las condiciones de las otras columnas. 
+                 Los rectángulos destacados son los términos que fueron seleccionados.", 
+                 style = glue("line-height: 1.1em; text-align: left; color: {color_texto}; margin-top: 6px; margin-bottom: -16px; font-size: 75%;")
+                 )
+                     ),
+                 
+                 #gráfico de distribución de resultados
+                 conditionalPanel(
+                   condition = "input.generar > 10",
+                 plotOutput("grafico_resultados", height = 420) |> withSpinner(proxy.height = 180, color = color_texto)
+                 )
                  )
           )
         )
@@ -231,11 +256,21 @@ ui <- fluidPage(
       
       ## firma ----
       fluidRow(
-        column(12, style = glue("color: {color_destacado}; margin-top: 24px;"),
+        column(12, style = glue("color: {color_destacado}; margin-top: 16px;"),
                HTML("by <a href='http://instagram.com/natogatotattoo'>@natogatotattoo</a>")
         ),
         column(12, style = glue("color: {color_destacado}; margin-top: 6px; font-size: 75%; margin-bottom: 24px;"),
                HTML("programado en R, <a href='https://github.com/bastianolea/autotattoo'>código abierto en GitHub</a>")
+        )
+      ),
+      
+      # instrucciones ----
+      fluidRow(
+        column(12,
+               p('Presiona "generar" para obtener una idea. 
+                 ¡No es necesario que la sigas al pie de la letra!
+                 Cambia "spicyness" para ideas más/menos extremas, y "complejidad" para controlar el nivel de detalle.',
+                 style = paste("line-height: 1.1em; font-size: 75%; color:", color_texto, ";"))
         )
       )
   )
@@ -262,6 +297,7 @@ server <- function(input, output, session) {
   #   shinyWidgets::updateProgressBar(session = session, id = "barra", value = spicy_level())
   # })
   
+  ## probabilidades ----
   #funciones que retornan true con cierta probabilidad, para aleatorizar cosas
   probabilidad_muy_baja <- function() sample(1:10, 1) == 1 #10%
   probabilidad_baja <- function() sample(1:5, 1) == 1 #20%
@@ -269,9 +305,9 @@ server <- function(input, output, session) {
   probabilidad_alta <- function() sample(1:10, 1) > 3 #70%
   
   #multiplicadores para aumentar chances de algunos elementos
-  prob_baja = 3
-  prob_media = 5
-  prob_alta = 14
+  prob_baja = 5
+  prob_media = 8
+  prob_alta = 16
   
   #retorna true si se eligió la opción tatuaje (default)
   es_tatuaje <- reactive(input$tipo == "tatuaje")
@@ -304,57 +340,38 @@ server <- function(input, output, session) {
                     paso = .paso, conjunto = .conjunto)
   }
   
-  ### spicyness ----
+  ## spicyness ----
   # actúa como multiplicador de términos más extremos, donde el valor de 4 es por defecto. algunos términos lo usan dividido por 2
   
-  if (shiny::isRunning()) { #para probar la app fuera del entorno interactivo de shiny
-    
-    spicy <- reactive({
-      # valor = 3
-      valor = input$spicy
-
-      # c(1:5)^2
-      spicy = valor ^ 2
-      
-      return(spicy)
-    })
-    
-  } else {
-    spicy <- function() 4
-  }
-  # da 1, 4, 9, 16, 25
+  # spicy normal: da 1, 4, 9, 16, 25
+  spicy <- reactive({
+    # valor = 3
+    valor = input$spicy
+    spicy = valor ^ 2 # c(1:5)^2
+    return(spicy)
+  })
   
-  
+  # spicy alto: casi el doble que normal: da 1, 6, 16, 30, 48
   spicy_plus <- reactive({
     # valor <- 1
     valor <- spicy()
-    
-    # (c(1, 4, 9, 16, 25)-1)*2
-    spicy_plus <- (valor-1)*2
-    
+    spicy_plus <- (valor-1)*2 # (c(1, 4, 9, 16, 25)-1)*2
     if (spicy_plus < 1) spicy_plus = 1
-    
+    if (spicy_plus > 20) spicy_plus = 20
     return(spicy_plus)
   })
-  # da 1, 6, 16, 30, 48
   
-  
+  # la mitad del spicy normal: da 1, 3, 5, 9, 13 
   medium_spicy <- reactive({
     # valor <- 4
     valor <- spicy()
-    
-    # ceiling(c(1, 4, 9, 16, 25)/2+0.1)
-    medium_spicy <- ceiling(valor/2+0.1)
-
+    medium_spicy <- ceiling(valor/2+0.1) # ceiling(c(1, 4, 9, 16, 25)/2+0.1)
     return(medium_spicy)
   })
-  # da 1, 3, 5, 9, 13 
-  
   
   mild_spicy <- reactive(medium_spicy()) #alias
   
-  
-  
+  # complejidad: de 1 a 3
   complejidad <- reactive(input$complejidad)
   
   
@@ -378,13 +395,13 @@ server <- function(input, output, session) {
                        "conejo" |> rep(prob_baja), "gatito" |> rep(prob_baja), "ratita" |> rep(prob_baja), "rana" |> rep(prob_baja), 
                        "animalito", "mascota que conozcas o hayas conocido", "animalito doméstico", "animal exótico" |> rep(medium_spicy()), "animal salvaje" |> rep(medium_spicy()))
     
-    ideas_terror = c("demonio" |> rep(medium_spicy()), "súcubo" |> rep(spicy()), "demonia" |> rep(prob_baja), "calabaza", "rata", "esqueleto" |> rep(prob_baja), "calavera", "cráneo" |> rep(prob_baja), 
-                     "bruja", "zombie" |> rep(prob_baja), "ogro", "troll", "vampiresa" |> rep(medium_spicy()), "yokai" |> rep(prob_baja), "kappa",
-                     "esqueleto" |> rep(medium_spicy()), "chivo" |> rep(prob_baja + spicy()), "cabra", "espectro", "cerbero", "cíclope", "minotauro", "arpía", "medusa", "monstruo", "araña", 
+    ideas_terror = c("demonio" |> rep(medium_spicy()), "súcubo" |> rep(medium_spicy()), "demonia" |> rep(prob_baja), "calabaza", "rata", "calavera", "cráneo" |> rep(prob_baja), 
+                     "bruja", "zombie" |> rep(prob_baja), "ogro", "troll", "vampiresa" |> rep(medium_spicy()),
+                     "esqueleto" |> rep(medium_spicy()), "chivo" |> rep(medium_spicy()), "cabra", "espectro", "cerbero", "cíclope", "minotauro", "arpía", "medusa", "monstruo", "araña", 
                      "insecto", "serpiente", "personaje de halloween", "cosa de halloween")
     
     ideas_objetos = c("jaula", "llave", "tijera", "cadena", "candado", "taza de té", "cafetera",
-                      "flor de loto", "flor", "arreglo floral", "honguito", "hongo", "pez koi", "pez")
+                      "flor de loto", "flor", "arreglo floral", "honguito", "hongo")
     
     # estas solo en estido oriental
     ideas_oriental = c("hannya", "tigre", "pez koi", "ave fénix", "dragón", "oni", "pez gato", "geisha", "maneki neko", 
@@ -392,7 +409,7 @@ server <- function(input, output, session) {
                        "daruma", "yokai", "kappa", "demonio japonés", "bestia mitológica japonesa")
     
     
-    #### objetos usables ----
+    ## objetos usables
     # para animales y terror
     ideas_objetos_usables = c("casco", "armadura", "bufanda", "sombrero", "cadena", "chaleca" |> rep(medium_spicy()), "par de calcetines", "gorro de mago", 
                               "lentes ópticos", "túnica", "collar precioso", "cuernos de reno" |> rep(medium_spicy()), 
@@ -400,25 +417,31 @@ server <- function(input, output, session) {
                                 "nunchaku", "corset", "lencería", "ropa interior", "arnés", "un solo ojo", "múltiples ojos") |> rep(spicy_plus())
     )
     
+    ideas_otras = c("escarabajo" |> rep(prob_media), "polilla" |> rep(prob_media), "mariposa", "dragón",
+                    "personaje de tu serie favorita")
+    
+    ### probabilidades de conjuntos ----
     # pool de ideas
-    ideas = c("mujer" |> rep(prob_alta * spicy()), #se selecciona de su conjunto especial
-              "personaje de anime" |> rep(prob_media * spicy()), #se selecciona de su conjunto especial
+    ideas = c("mujer" |> rep(prob_baja * spicy()), #se selecciona de su conjunto especial
               "personaje de videojuegos" |> rep(prob_media), #se selecciona de su conjunto especial
-              "jojos" |> rep(prob_media * spicy()), #se selecciona de su conjunto especial
-              "pokemon" |> rep(prob_alta*2),
+              "personaje de anime" |> rep(prob_baja * spicy()), #se selecciona de su conjunto especial
+              "jojos" |> rep(prob_baja * spicy()), #se selecciona de su conjunto especial
+              "pokemon" |> rep(prob_alta),
               ideas_animales, #con adjetivos extra
               ideas_terror |> rep(medium_spicy()), #con adjetivos extra
-              ideas_oriental |> rep(medium_spicy()), #estilo fijo
+              ideas_oriental |> rep(medium_spicy()), #estilo oriental fijo
               ideas_objetos,
-              "escarabajo" |> rep(prob_media), "polilla" |> rep(prob_media), "mariposa", "dragón",
-              "personaje de tu serie favorita")
+              ideas_otras)
     
     idea_base <- idea <- elegir(ideas) #elegir idea
+    
+    #texto de diagnóstico:
     message()
-    message("idea elegida: ", toupper(idea), ", nivel de spicy: ", spicy())
+    message(glue("idea elegida: {toupper(idea)}"))
+    message(glue("niveles de spicy: {spicy()}, plus: {spicy_plus()}, medium: {medium_spicy()}"))
     
     
-    #### género ----
+    ### género ----
     # de todas las ideas, especificar acá cuales son de género femenino, para modificar el resto de opciones
     ideas_femeninas <- c("calabaza", "bruja", "flor", "mujer", "ratita", "arpía", "medusa", "cabra", "rana", "araña", "calavera", "cosa de halloween",
                          "loica", "jaula", "llave", "tijera", "navaja", "cuchilla", "manopla", "polilla", "mariposa", "serpiente", "demonia",
@@ -445,7 +468,7 @@ server <- function(input, output, session) {
                 solo_tatuaje("neo tradi"), solo_tatuaje("blackwork"), solo_tatuaje("new school"), 
                 c("darks", "gótico", "tenebroso", "coquette", "cottagecore", "oscuro", 
                   "espeluznante", "creepy") |> rep(spicy())
-                )
+    )
     # estilos complejos
     if (complejidad() > 2) {
       estilos <- c(estilos, "art noveau", "surrealista", "cubista", "barroco", "geométrico", "abstracto", "8 bits", "realista")
@@ -466,8 +489,9 @@ server <- function(input, output, session) {
     
     #### extras ----
     # son elementos que se agregan como adorno al tatuaje. solo se agregan si la complejidad es 2 o más
-    intro_extras <- c("con" |> rep(prob_media), ifelse(es_femenino, "rodeada de", "rodeado de"), 
+    intro_extras <- c("con" |> rep(prob_media), #ifelse(es_femenino, "rodeada de", "rodeado de"), 
                       "con detalles de", ifelse(es_femenino, "detallada con", "detallado con"),
+                      "con un poco de", "con algo de",
                       ifelse(es_femenino, "adornada con", "adornado con"))
     
     extras <- c("estrellitas", "calaveritas", "bichitos", "brillitos", "nubecitas", "lucecitas", "vegetación",
@@ -496,7 +520,8 @@ server <- function(input, output, session) {
                    "asquerosos", "extravagantes", "exóticos", "chillones", "bien maracos", "bien putitos", "coquetones") |> 
         rep(medium_spicy())
       
-      estilos <- c(estilos, "erótico", "coqueto", "horror cósmico", "horny", "violento", "horror", "gore", "seductor", "del inframundo", "del infierno", "del caos") |> 
+      estilos <- c(estilos, "erótico", "coqueto", "horror cósmico", "horny", 
+                   "violento", "horror", "gore", "seductor", "del inframundo", "del infierno", "del caos") |> 
         rep(spicy())
       
       extras <- c(extras, "violencia", "muerte", "lencería", "sustancias viscosas no especificadas", "horrores incomprensibles", 
@@ -586,12 +611,12 @@ server <- function(input, output, session) {
              peso = ifelse(tipo %in% c("ghost", "fairy"), 10, peso)) |> 
       filter(peso > 1) |>  #solo de tipos que nos interesan
       mutate(tipo2 = recode(tipo, 
-                           "poison" = "veneno", 
-                           "psychic" = "psíquico", 
-                           "bug" = "insecto", 
-                           "dark" = "oscuro",
-                           "ghost" = "fantasma", 
-                           "fairy" = "hada"))
+                            "poison" = "veneno", 
+                            "psychic" = "psíquico", 
+                            "bug" = "insecto", 
+                            "dark" = "oscuro",
+                            "ghost" = "fantasma", 
+                            "fairy" = "hada"))
     
     
     # elecciones
@@ -634,8 +659,8 @@ server <- function(input, output, session) {
                           ifelse(es_femenino, "mutilada", "mutilado") |> rep(spicy()), "en descomposición" |> rep(spicy()),
                           ifelse(es_femenino, "herida", "herido"), ifelse(es_femenino, "corrompida", "corrompido"), ifelse(es_femenino, "hechizada", "hechizado"),
                           c("contemplando horrores más allá de todo lo imaginable",
-                          "experimentando tormentos incomprensibles", "en trance", ifelse(es_femenino, "exorcizada", "exorcizado")) |> rep(medium_spicy())
-                          )
+                            "experimentando tormentos incomprensibles", "en trance", ifelse(es_femenino, "exorcizada", "exorcizado")) |> rep(medium_spicy())
+    )
     
     animales_adjetivo <- elegir(animales_adjetivos)
     terror_adjetivo <- elegir(terror_adjetivos)
@@ -684,7 +709,7 @@ server <- function(input, output, session) {
     
     # objeto para mujeres (solo complejidad 2 y 3)
     if (complejidad() > 1) {
-    mujer_objeto_complejidad <- glue(" con {mujer_objeto}")
+      mujer_objeto_complejidad <- glue(" con {mujer_objeto}")
     } else {
       mujer_objeto_complejidad <- ""
     }
@@ -755,6 +780,19 @@ server <- function(input, output, session) {
   }) |> 
     bindEvent(input$generar, input$spicy, input$complejidad)
   
+  # ALMACENAR ----
+  valores <- reactiveValues()
+  
+  # almacenar todas las elecciones en un objeto
+  observeEvent(elegido(),
+               {
+                 valores[[glue("idea_{input$generar}")]] <- elegido()$idea_base
+                 # browser()
+                 # valores$"1"
+                 # names(valores)
+               })
+  
+  
   
   
   # REDACCIÓN ----
@@ -764,6 +802,7 @@ server <- function(input, output, session) {
     req(elegido())
     # browser()
     message("ejecutando redacción...")
+    # Sys.sleep(0.3)
     
     # agregar o no el extra dependiendo de la complejidad
     if (complejidad() >= 2) {
@@ -853,6 +892,8 @@ server <- function(input, output, session) {
   
   
   # GRAFICAR ----
+  
+  ## posibilidades ----
   graficar <- reactive({
     req(input$generar > 0)
     req(elegido())
@@ -906,7 +947,6 @@ server <- function(input, output, session) {
                                   .default = TRUE)) 
     
     # browser()
-    # dev.new()
     
     elegidos |>
       ggplot(aes(x = conjunto, y = termino)) +
@@ -935,9 +975,35 @@ server <- function(input, output, session) {
   })
   
   #output del gráfico
-  output$grafico <- renderPlot({
+  output$grafico_posibilidades <- renderPlot({
     graficar()
   })
+  
+  ## resultados ----
+  output$grafico_resultados <- renderPlot({
+    req(input$generar > 0)
+    req(elegido())
+    req(input$magia %% 2 == 1)
+    
+    # valores_obtenidos <- sapply(valores, as.character) |> unname()
+    valores_obtenidos <- reactiveValuesToList(valores) |> unlist()
+    
+    # browser()
+    # dev.new()
+    
+    tibble("ideas" = valores_obtenidos) |> 
+      count(ideas) |> 
+      ggplot(aes(n, ideas)) +
+      geom_col(width = 0.3, fill = color_secundario) +
+      scale_x_continuous(expand = expansion(0)) +
+      theme_minimal() +
+      theme(axis.title = element_blank(),
+            panel.grid = element_blank(), 
+            axis.text.x = element_blank(),
+            axis.text.y = element_text(color = color_texto)) +
+      theme(plot.background = element_rect(fill = color_fondo, linewidth = 0))
+  })
+  
   
 }
 
