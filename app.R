@@ -18,6 +18,7 @@ library(shinycssloaders)
 color_fondo = "#c386f1"
 # color_fondo = "#bd7aff"
 color_secundario = "#f89cfa"
+color_secundario_alto = "#f772f9"
 color_detalle = "#f8c2f9"
 color_texto = "#8e5fb2"
 color_destacado = "#89d1dc"
@@ -32,6 +33,14 @@ ui <- fluidPage(title = "AutoNatoTattoo",
                   theme = "default",
                   bs_vars_font(size_base = "22px", #aumentar globalmente tamaño de letra
                                family_sans_serif = "Pixelify Sans" #cargar fuente o tipo de letra
+                  ), 
+                  bs_vars_modal(content_bg = color_fondo, content_border_color = color_detalle, 
+                                backdrop_bg = color_fondo, backdrop_opacity = "60%"),
+                  bs_vars_button(
+                    default_color = color_texto,
+                    default_bg = color_secundario,
+                    default_border = color_detalle,
+                    border_radius_base = "10px"
                   )
                 )),
                 
@@ -39,11 +48,13 @@ ui <- fluidPage(title = "AutoNatoTattoo",
                 
                 tags$style(".recalculating { opacity: inherit !important; }"),
                 
-                tags$style("h1 {
+                tags$style(paste0(
+                  "h1 {
                            font-size: 200%;
                            font-weight: bold;
+                  color: ", color_destacado, ";
                            }"
-                ),
+                )),
                 
                 #cambiar color de fondo
                 tags$style(
@@ -62,7 +73,7 @@ ui <- fluidPage(title = "AutoNatoTattoo",
            
            #estilo de botones
            tags$style(
-             paste0(".action-button, .action-button:focus {
+             paste0(".action-button, .action-button:focus, .btn-default {
            background-color: ", color_secundario, "; 
            letter-spacing: 1px;
            border-radius: 8px; border-width: 3px; 
@@ -148,6 +159,34 @@ ui <- fluidPage(title = "AutoNatoTattoo",
              opacity: 0;
   }"),
   
+  #animación del desafío semanal 
+  tags$style(paste0("
+  #desafio {
+  animation: fadein 1s infinite;
+}
+@keyframes fadein {
+  0% { background-color: ", color_secundario, "}
+  50%   { background-color: ", color_secundario_alto, "}
+  100%   { background-color: ", color_secundario, "}
+}
+  ")),
+
+#estilo del popup
+tags$style(paste0("
+                  .modal-content {
+                  border: 3px solid ", color_detalle, "!important;
+                  box-shadow: 0 3px 18px rgba(0,0,0,0.2);
+                  }
+                  
+.modal-header {
+  padding: 15px;
+  border-bottom: 3px solid ", color_detalle, ";
+}
+
+.modal-footer {
+border-top: 3px solid ", color_detalle, ";
+}
+  ")),
   
   
   ## título ----
@@ -180,7 +219,7 @@ ui <- fluidPage(title = "AutoNatoTattoo",
       ## botones ----
       fluidRow(
         column(12, 
-               align="center", 
+               align = "center", 
                style = "margin-bottom: 24px; margin-top: 12px;",
                div(
                  #botón principal
@@ -190,7 +229,17 @@ ui <- fluidPage(title = "AutoNatoTattoo",
                               # style = glue("width: 220px; background-color: {color_destacado};
                               # #             border-radius: 8px; border-color: {color_detalle}; border-width: 3px; color: {color_texto}")
                  )
+                 
                ),
+               
+               div(style = "margin-top: 32px; width: 220px;",
+                 actionButton("desafio", 
+                                label = "desafío semanal",
+                                style = "width: 220px;"
+                                # style = glue("width: 220px; background-color: {color_destacado};
+                                # border-radius: 8px; border-color: {color_detalle}; border-width: 3px; color: {color_texto};
+                                # ")
+               )),
                
                # botonera de opciones de ilustración
                div(style = "margin-top: 38px; width: 220px;",
@@ -297,6 +346,34 @@ server <- function(input, output, session) {
   #   shinyWidgets::updateProgressBar(session = session, id = "barra", value = spicy_level())
   # })
   
+  
+  ## botones presionados ----
+  botones <- reactiveValues(ultimo_presionado = character())
+  
+  observeEvent(input$generar, {
+    if (input$generar > 0 ) {
+      botones$ultimo_presionado = "generar"
+    }
+  })
+  observeEvent(input$desafio, {
+    if (input$desafio > 0 ) {
+      botones$ultimo_presionado = "desafio"
+    }
+  })
+  observeEvent(input$cerrar_popup, {
+    # if (input$desafio > 0 ) {
+      botones$ultimo_presionado = "generar"
+    # }
+  })
+  
+  
+  # output$lastButtonCliked <- renderText({
+  #   paste("Last button clicked: ", botones$ultimo_presionado)
+  # })
+  observeEvent(input$generar | input$desafio,
+               message("botón presionado: ", botones$ultimo_presionado)
+  )
+  
   ## probabilidades ----
   #funciones que retornan true con cierta probabilidad, para aleatorizar cosas
   probabilidad_muy_baja <- function() sample(1:10, 1) == 1 #10%
@@ -379,9 +456,20 @@ server <- function(input, output, session) {
   # ELECCIÓN ----
   # objeto reactive que crea los conjuntos y ejecuta todas las probabilidades que eligen términos, y los retorna como una lista
   elegido <- reactive({
-    req(input$generar > 0)
+    # req(input$generar > 0)
+    req(length(botones$ultimo_presionado) > 0)
     message("ejecutando elección...")
     
+    
+    # anular aleatoriedad si se genera para el desafío
+    if (botones$ultimo_presionado == "desafio") {
+      message("cambiando a semilla fija (semanal)")
+      semana <- format(Sys.Date(), "%W") |> as.integer()
+      set.seed(semana+0) #sumar 1 para ver los de las próximas semanas
+    } else {
+      message("cambiando a semilla aleatoria")
+      set.seed(sample(1:1000, 1))
+    }
     
     ## ideas ----
     #son los elementos principales del tatuaje, el sujeto del dibujo
@@ -445,7 +533,7 @@ server <- function(input, output, session) {
     # de todas las ideas, especificar acá cuales son de género femenino, para modificar el resto de opciones
     ideas_femeninas <- c("calabaza", "bruja", "flor", "mujer", "ratita", "arpía", "medusa", "cabra", "rana", "araña", "calavera", "cosa de halloween",
                          "loica", "jaula", "llave", "tijera", "navaja", "cuchilla", "manopla", "polilla", "mariposa", "serpiente", "demonia",
-                         "hacha", "espada", "túnica", "maza", "cafetera", "cadena", "vampiresa", "lechuza", "armadura", "chaleca", "hannya", "geisha"
+                         "hacha", "espada", "túnica", "maza", "cafetera", "cadena", "vampiresa", "lechuza", "armadura", "chaleca", "hannya", "geisha", "bestia mitológica japonesa"
     )
     es_femenino <- idea %in% ideas_femeninas
     articulo <- ifelse(es_femenino, "una", "un") # género del artículo de la idea
@@ -778,19 +866,7 @@ server <- function(input, output, session) {
     
     return(resultados)
   }) |> 
-    bindEvent(input$generar, input$spicy, input$complejidad)
-  
-  # ALMACENAR ----
-  valores <- reactiveValues()
-  
-  # almacenar todas las elecciones en un objeto
-  observeEvent(elegido(),
-               {
-                 valores[[glue("idea_{input$generar}")]] <- elegido()$idea_base
-                 # browser()
-                 # valores$"1"
-                 # names(valores)
-               })
+    bindEvent(input$generar, input$spicy, input$complejidad, input$desafio, input$cerrar_popup)
   
   
   
@@ -798,7 +874,7 @@ server <- function(input, output, session) {
   # REDACCIÓN ----
   # en este reactive se carga el resultado de las elecciones como un objeto, que es una lista que contiene todos los conjuntos y términos
   redaccion <- reactive({
-    req(input$generar > 0)
+    # req(input$generar > 0 | input$generar_desafio > 0)
     req(elegido())
     # browser()
     message("ejecutando redacción...")
@@ -883,11 +959,78 @@ server <- function(input, output, session) {
     # browser()
     if (input$generar == 0) { #si no se ha presionado el botón, mostrar este texto
       texto <- '<br><br>presiona "generar"'
-    } else {
+      
+    # } else if (botones$ultimo_presionado == "desafio") {
+    #   texto <- '<br><br>presiona "generar"'
+    }  else {
       texto <- redaccion() #output del reactive
     }
     return(texto)
+  })# |> bindEvent(input$generar)
+  
+  
+  
+  
+  
+  # DESAFÍO ----
+  observeEvent(input$desafio, {
+    message("boton desafío")
+    shiny::updateSliderInput(session, inputId = "spicy", value = 2)
+    shiny::updateSliderInput(session, inputId = "complejidad", value = 3)
+    shiny::showModal(
+      popup_desafio())
   })
+  
+  ## popup ----
+  popup_desafio <- reactive(
+    modalDialog(title = h1("desafío semanal"),fade = F,
+                               div(style = paste("color:", color_texto),
+                                 p("sube tu diseño o ilustración del desafío semanal a redes sociales con el hashtag",
+                                      HTML("<a href='https://www.instagram.com/explore/tags/desafíoAutoNatoTattoo'>#desafíoAutoNatoTattoo</a>")
+                                 ),
+                                 
+                                  # div(style = "margin-left:auto; margin-right: auto;",
+                                 fluidRow(
+                                   column(12,  align = "center",
+                                 div(style = glue("max-width: 480px; min-height: 200px;
+                            margin: 18px; margin-top: 26px; margin-bottom: 26px; 
+                            padding: 16px; background-color: {color_secundario}; 
+                            border-radius: 8px; border: 3px solid; border-color: {color_detalle}; 
+                            color: {color_texto};"),
+                                 htmlOutput("texto_generado_desafio")
+                                 )
+                                  )
+                                 )
+                               ),
+                               footer = actionButton("cerrar_popup", "volver") #modalButton("volver"),
+  )
+  )
+  
+  observeEvent(input$cerrar_popup,{
+    # values$modal_closed <- T
+    removeModal()
+  })
+  
+  output$texto_generado_desafio <- renderText({
+    message("output desafío")
+    # if (input$desafio > 0) {
+    # set.seed(as.numeric(Sys.Date()))
+    # }
+    texto <- isolate(redaccion())
+    return(texto)
+  })
+  
+  # ALMACENAR ----
+  valores <- reactiveValues()
+  
+  # almacenar todas las elecciones en un objeto
+  observeEvent(elegido(),
+               {
+                 valores[[glue("idea_{input$generar}")]] <- elegido()$idea_base
+                 # browser()
+                 # valores$"1"
+                 # names(valores)
+               })
   
   
   
